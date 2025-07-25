@@ -1,0 +1,172 @@
+﻿@*  @page "/Signup"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@using BugZila.Enums
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+@inject SessionService SessionService
+<PageTitle>Signup</PageTitle>
+
+<h1>Signup</h1>
+
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Users" OnValidSubmit="AddUsers" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            
+            <ValidationSummary />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="mb-3">
+                <label for="name" class="form-label">Name:</label>
+                <InputText id="name" @bind-Value="Users.Name" class="form-control" />
+                <ValidationMessage For="() => Users.Name" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email:</label>
+                <InputText id="email" @bind-Value="Users.Email" class="form-control" />
+                <ValidationMessage For="() => Users.Email" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Password:</label>
+                <InputText id="password" @bind-Value="Users.Password" class="form-control" />
+                <ValidationMessage For="() => Users.Password" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="usertype" class="form-label">User Type:</label>
+                <InputSelect id="usertype" class="form-control" @bind-Value="Users.UserType">
+                    @foreach (var userType in Enum.GetValues(typeof(UserType)).Cast<UserType>())
+                    {
+                        <option value="@(Convert.ToInt32(userType))">@userType</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Users.UserType" class="text-danger" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Create</button>
+        </EditForm>
+    </div>
+</div>
+
+
+
+@code {
+    [SupplyParameterFromForm]
+    private Users Users { get; set; } = new();
+
+    private async Task AddUsers()
+    {
+
+        using var context = DbFactory.CreateDbContext();
+        context.Users.Add(Users);
+        await context.SaveChangesAsync();
+        if (SessionService.IsLoggedIn)
+        {
+            NavigationManager.NavigateTo("/users");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+} *@
+@page "/signup"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@using BugZila.Enums
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+@inject SessionService SessionService
+@rendermode InteractiveServer
+
+<PageTitle>Signup</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg rounded-4 border-0">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Create an Account</h2>
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger text-center">@errorMessage</div>
+                    }
+
+                    <EditForm method="post" Model="Users" OnValidSubmit="AddUsers">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" role="alert" />
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Full Name</label>
+                            <InputText id="name" class="form-control" @bind-Value="Users.Name" />
+                            <ValidationMessage For="() => Users.Name" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email address</label>
+                            <InputText id="email" type="email" class="form-control" @bind-Value="Users.Email" />
+                            <ValidationMessage For="() => Users.Email" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <InputText id="password" type="password" class="form-control" @bind-Value="Users.Password" />
+                            <ValidationMessage For="() => Users.Password" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="usertype" class="form-label">User Role</label>
+                            <InputSelect id="usertype" class="form-select" @bind-Value="Users.UserType">
+                                <option disabled selected value="">-- Select Role --</option>
+                                @foreach (var userType in Enum.GetValues(typeof(UserType)).Cast<UserType>())
+                                {
+                                    <option value="@(Convert.ToInt32(userType))">@userType</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => Users.UserType" class="text-danger" />
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary px-4 py-2 rounded-pill">Sign Up</button>
+                        </div>
+                    </EditForm>
+
+                    <div class="text-center mt-3">
+                        <span>Already have an account?</span>
+                        <a href="/" class="text-decoration-none"> Sign in</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Users Users { get; set; } = new();
+    private string? errorMessage;
+
+    private async Task AddUsers()
+    {
+        using var context = DbFactory.CreateDbContext();
+         
+        var emailExists = await context.Users.AnyAsync(u => u.Email == Users.Email);
+        if (emailExists)
+        {
+            errorMessage = "An account with this email already exists.";
+            return;
+        }
+        var hasher = new PasswordHasher<Users>();
+        Users.PasswordHash = hasher.HashPassword(Users, Users.Password!);
+        context.Users.Add(Users);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/");
+
+    }
+}

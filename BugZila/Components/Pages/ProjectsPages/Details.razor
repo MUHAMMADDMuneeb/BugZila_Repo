@@ -1,0 +1,94 @@
+﻿@page "/projects/details"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+@inject SessionService SessionService
+@rendermode InteractiveServer
+
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+@if(hello == -1)
+{
+    <h1>Loading ..... </h1>
+}
+else
+{
+    <PageTitle>Project Details</PageTitle>
+
+    <h2 class="mt-4 text-primary">Project Details</h2>
+    <hr />
+
+    @if (projects is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3 fw-bold">Name</dt>
+                    <dd class="col-sm-9">@projects.Name</dd>
+
+                    <dt class="col-sm-3 fw-bold">Description</dt>
+                    <dd class="col-sm-9">@projects.Description</dd>
+
+                    <dt class="col-sm-3 fw-bold">Deadline</dt>
+                    <dd class="col-sm-9">@projects.Deadline.ToShortDateString()</dd>
+
+                    <dt class="col-sm-3 fw-bold">Manager ID</dt>
+                    <dd class="col-sm-9">@projects.ManagerID</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-start gap-2">
+            <a class="btn btn-primary" href="@($"/projects/edit?projectid={projects.ProjectID}")">Edit</a>
+            <button class="btn btn-secondary" @onclick="GoBack">Back to List</button>
+        </div>
+    }
+    }
+@code {
+    int hello = -1;
+
+   
+   
+    private Projects? projects;
+
+    [SupplyParameterFromQuery]
+    private int ProjectID { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetId();
+        using var context = DbFactory.CreateDbContext();
+        projects = await context.Projects.FirstOrDefaultAsync(m => m.ProjectID == ProjectID);
+
+       
+    }
+    private async Task GetId()
+    {
+        hello = await LocalStorage.GetItemAsync<int>("Value");
+        if (hello != 1 && hello != -1)
+        {
+            NavigationManager.NavigateTo("/sessionfail");
+        }
+        StateHasChanged();
+    }
+    private void GoBack()
+    {
+        if (hello == 0)
+        {
+            NavigationManager.NavigateTo("/developer");
+        }
+        else if (hello == 1)
+        {
+            NavigationManager.NavigateTo("/admin");
+        }
+        else if (hello == 2)
+        {
+            NavigationManager.NavigateTo("/qa");
+        }
+
+    }
+}

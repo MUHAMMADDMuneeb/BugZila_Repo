@@ -1,0 +1,52 @@
+﻿@page "/projects"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using BugZila.Models
+@using BugZila.Data
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject SessionService SessionService
+@inject NavigationManager Navigation
+
+<PageTitle>Projects</PageTitle>
+
+<h2 class="mt-4 text-primary">Projects</h2>
+
+<QuickGrid TGridItem="Projects" Class="table table-bordered table-striped" Items="FilteredProjects.AsQueryable()">
+    <PropertyColumn Property="projects => projects.Name" Title="Name" />
+    <PropertyColumn Property="projects => projects.Description" Title="Description" />
+    <TemplateColumn Title="Deadline" Context="projects">
+        @projects.Deadline.ToShortDateString()
+    </TemplateColumn>
+
+    <TemplateColumn Title="Manager Name" Context="projects">
+        @projects.Manager?.Name
+    </TemplateColumn>
+
+    <TemplateColumn Title="Actions" Context="projects">
+        <a href="@($"projects/edit?projectid={projects.ProjectID}")">Edit</a> |
+        <a href="@($"projects/details?projectid={projects.ProjectID}")">Details</a> |
+        <a href="@($"projects/delete?projectid={projects.ProjectID}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+
+@code {
+    [Parameter]
+    public List<Projects> FilteredProjects{ get; set; } = new();
+    private ApplicationDbContext context = default!;
+   
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+
+        // Ensure related Manager is loaded for the already-passed FilteredProjects list
+        foreach (var project in FilteredProjects)
+        {
+            context.Entry(project).Reference(p => p.Manager).Load(); // ✅ Load Manager if not included
+        }
+    }
+
+
+    // Authorization logic is commented out intentionally, per original code.
+}

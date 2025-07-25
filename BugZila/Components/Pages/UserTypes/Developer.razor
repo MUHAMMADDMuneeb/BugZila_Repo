@@ -1,0 +1,56 @@
+
+@page "/developer"
+@using BugZila.Components.Pages.ProjectUserPages
+@using BugZila.Components.Pages.BugsPages
+@using SessionCheck.Data
+@inject SessionService SessionService
+@inject NavigationManager Navigation
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+@rendermode InteractiveServer
+
+@if (hello == -1)
+{
+    <div class="text-center mt-5">
+        <div class="spinner-border text-info" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3">Loading Developer Panel...</p>
+    </div>
+}
+else
+{
+    <Logout />
+
+    <div class="container mt-4">
+        <h1 class="mb-4 text-info border-bottom pb-2">Developer Panel</h1>
+
+        <div class="card p-4 shadow-sm mb-4">
+            <BugComp Value="0" AllowedProjectIds="userIds" />
+        </div>
+
+        <div class="card p-4 shadow-sm">
+            <ProjectUserComp Value="0" AllowedUserIds="userIds" />
+        </div>
+    </div>
+}
+@code{
+    int hello = -1;
+    int DeveloperID;
+    private List<int> userIds = new();
+    protected override async Task OnInitializedAsync()
+    {
+        GetId();
+
+    }
+    private async Task GetId()
+    {
+        hello = await LocalStorage.GetItemAsync<int>("Value");
+        DeveloperID = await LocalStorage.GetItemAsync<int>("Id");
+        if (hello != 0 && hello != -1)
+        {
+            Navigation.NavigateTo("/sessionfail");
+        }
+        userIds.Add(DeveloperID);
+        StateHasChanged();
+    }
+}

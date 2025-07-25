@@ -1,0 +1,57 @@
+﻿@page "/projectuser"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using BugZila.Models
+@using BugZila.Data
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+
+<PageTitle>Project Users</PageTitle>
+
+<h2 class="mt-4 text-primary">Project Users</h2>
+
+<QuickGrid TItem="ProjectUser" Class="table table-bordered table-striped" Items="projectUserList.AsQueryable()">
+    <TemplateColumn Context="projectuser" Title="Project Name">
+        @projectuser.Project?.Name
+    </TemplateColumn>
+    @if (Value != 0)
+    {
+        <TemplateColumn Context="projectuser" Title="Developer Name">
+            @projectuser.User?.Name
+    </TemplateColumn>
+    }
+    
+</QuickGrid>
+
+@code {
+    [Parameter]
+    public List<int> AllowedUserIds { get; set; } = new();
+    [Parameter]
+    public int Value { get; set; }
+    private ApplicationDbContext context = default!;
+    private List<ProjectUser> projectUserList = new();
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+
+        // Load Project and User navigation properties
+        context = DbFactory.CreateDbContext();
+        if(Value == 1){
+            projectUserList = context.ProjectUsers
+                .Include(pu => pu.Project)
+                .Include(pu => pu.User)
+                .Where(pu => AllowedUserIds.Contains(pu.UserID))
+                .ToList();
+        }else if(Value == 0)
+        {
+            int userId = AllowedUserIds[0];
+            projectUserList =  context.ProjectUsers
+            .Include(pu => pu.Project)
+            .Where(pu => pu.UserID == userId)
+            
+            .ToList();
+        }
+    }
+
+    // public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

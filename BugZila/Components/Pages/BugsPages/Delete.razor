@@ -1,0 +1,139 @@
+﻿@page "/bugs/delete"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+@inject SessionService SessionService
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+@rendermode InteractiveServer
+
+@if(hello == -1)
+{
+    <h1>Loading ..... </h1>
+}
+else
+{
+    <Logout />
+
+
+<PageTitle>Delete</PageTitle>
+
+<h1>Delete Bugs</h1>
+
+<p>Are you sure you want to delete this?</p>
+<div>
+   
+    <hr />
+    @if (bugs is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Type</dt>
+            <dd class="col-sm-10">@bugs.Type</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Status</dt>
+            <dd class="col-sm-10">@bugs.Status</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Title</dt>
+            <dd class="col-sm-10">@bugs.Title</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Description</dt>
+            <dd class="col-sm-10">@bugs.Description</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Deadline</dt>
+            <dd class="col-sm-10">@bugs.Deadline</dd>
+        </dl>
+        
+        <dl class="row">
+            <dt class="col-sm-2">CreatorID</dt>
+            <dd class="col-sm-10">@bugs.CreatorID</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">DeveloperID</dt>
+            <dd class="col-sm-10">@bugs.DeveloperID</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">ProjectID</dt>
+            <dd class="col-sm-10">@bugs.ProjectID</dd>
+        </dl>
+        <dl class="row">
+            <dt class="col-sm-2">Screenshot</dt>
+            <dd class="col-sm-10">@bugs.Screenshot</dd>
+        </dl>
+        <EditForm method="post" Model="bugs" OnValidSubmit="DeleteBugs" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(bugs is null)">Delete</button> 
+                <button type="button" class="btn btn-secondary ms-2" @onclick="GoBack">
+                    Back to List
+                </button>
+        </EditForm>
+    }
+    </div>
+    }
+@code {
+    int hello = -1;
+    private Bugs? bugs;
+
+    [SupplyParameterFromQuery]
+    private int BugID { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetId();
+        using var context = DbFactory.CreateDbContext();
+        bugs = await context.Bugs.FirstOrDefaultAsync(m => m.BugID == BugID);
+
+        if (bugs is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+    private async Task GetId()
+    {
+        hello = await LocalStorage.GetItemAsync<int>("Value");
+        if (hello != 1 && hello != -1 && hello != 2)
+        {
+            NavigationManager.NavigateTo("/sessionfail");
+        }
+        StateHasChanged();
+    }
+
+    private async Task DeleteBugs()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Bugs.Remove(bugs!);
+        await context.SaveChangesAsync();
+        if (hello == 0)
+        {
+            NavigationManager.NavigateTo("/developer");
+        }
+        else if (hello == 1)
+        {
+            NavigationManager.NavigateTo("/admin");
+        }
+        else if (hello == 2)
+        {
+            NavigationManager.NavigateTo("/qa");
+        }
+    }
+    private void GoBack()
+    {
+        if(hello == 0)
+        {
+            NavigationManager.NavigateTo("/developer");
+        }else if(hello == 1)
+        {
+            NavigationManager.NavigateTo("/admin");
+        }
+        else if (hello == 2)
+        {
+            NavigationManager.NavigateTo("/qa");
+        }
+
+    }
+}

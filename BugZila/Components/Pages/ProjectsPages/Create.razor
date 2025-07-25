@@ -1,0 +1,133 @@
+﻿
+@page "/projects/create"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+@inject SessionService SessionService
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+@rendermode InteractiveServer
+<PageTitle>Create</PageTitle>
+@if(hello == -1)
+{
+    <h1>Loading ..... </h1>
+}
+else
+{
+    <PageTitle>Create Project</PageTitle>
+
+    <h2 class="mt-4 text-primary">Create New Project</h2>
+    <hr />
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <EditForm method="post" Model="Projects" OnValidSubmit="AddProjects" FormName="create" Enhance>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" role="alert" />
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="name" class="form-label">Name</label>
+                            <InputText id="name" class="form-control" @bind-Value="Projects.Name" />
+                            <ValidationMessage For="() => Projects.Name" class="text-danger" />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="description" class="form-label">Description</label>
+                            <InputText id="description" class="form-control" @bind-Value="Projects.Description" />
+                            <ValidationMessage For="() => Projects.Description" class="text-danger" />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="deadline" class="form-label">Deadline</label>
+                            <InputDate id="deadline" class="form-control" @bind-Value="Projects.Deadline" />
+                            <ValidationMessage For="() => Projects.Deadline" class="text-danger" />
+                        </div>
+
+                        
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-start gap-2">
+                        <button type="submit" class="btn btn-success px-4">Create</button>
+                        <button type="button" class="btn btn-secondary px-4" @onclick="GoBack">Back to List</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+
+
+}
+
+@code {
+    int hello = -1;
+    int ManagerId;
+    [SupplyParameterFromForm]
+    private Projects Projects { get; set; } = new Projects
+    {
+        Deadline = DateTime.Today 
+    };
+
+    // private List<Users> Managers = new();
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            hello = await LocalStorage.GetItemAsync<int>("Value");
+            ManagerId = await LocalStorage.GetItemAsync<int>("Id");
+
+            if (hello != 1 && hello != -1)
+            {
+                NavigationManager.NavigateTo("/sessionfail");
+            }
+            Projects.ManagerID = ManagerId;
+
+            // Load only users with UserType = 1 (Manager)
+            
+            StateHasChanged();
+            
+        }
+    }
+
+   
+
+
+    
+   
+
+    private async Task AddProjects()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Projects.Add(Projects);
+        await context.SaveChangesAsync();
+        if (hello == 0)
+        {
+            NavigationManager.NavigateTo("/developer");
+        }
+        else if (hello == 1)
+        {
+            NavigationManager.NavigateTo("/admin");
+        }
+        else if (hello == 2)
+        {
+            NavigationManager.NavigateTo("/qa");
+        }
+    }
+    private void GoBack()
+    {
+        if (hello == 0)
+        {
+            NavigationManager.NavigateTo("/developer");
+        }
+        else if (hello == 1)
+        {
+            NavigationManager.NavigateTo("/admin");
+        }
+        else if (hello == 2)
+        {
+            NavigationManager.NavigateTo("/qa");
+        }
+
+    }
+}

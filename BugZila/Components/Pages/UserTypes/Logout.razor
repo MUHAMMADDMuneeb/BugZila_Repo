@@ -1,0 +1,21 @@
+﻿@using SessionCheck.Data
+@inject SessionService SessionService
+@inject NavigationManager Navigation
+
+<div class="d-flex justify-content-between align-items-center px-4 py-3 shadow" style="background-color: #0d6efd;">
+    <div class="text-white h4 m-0">
+        BugZila
+    </div>
+
+    <button class="btn btn-outline-light" @onclick="HandleLogout">
+        Logout
+    </button>
+</div>
+
+@code {
+    private async Task HandleLogout()
+    {
+        await SessionService.RemoveSessionAsync();
+        Navigation.NavigateTo("/");
+    }
+}

@@ -1,0 +1,149 @@
+﻿@page "/projectusers/create"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+@inject SessionService SessionService
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+
+<PageTitle>Create</PageTitle>
+
+<h1>Asign Project</h1>
+
+
+<hr />
+
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="ProjectUser" OnValidSubmit="AddProjects" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+
+
+            <div class="mb-3">
+                <label for="project">Select Project</label>
+                <InputSelect id="project" class="form-control" @bind-Value="ProjectUser.ProjectID">
+                    <option value="0">-- Select Project --</option>
+                    @foreach (var project in Projects)
+                    {
+                        <option value="@project.ProjectID">@project.Name</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label for="user">Select User</label>
+                <InputSelect id="user" class="form-control" @bind-Value="ProjectUser.UserID">
+                    <option value="0">-- Select User --</option>
+                    
+                    @foreach (var user in Users)
+                    {
+                        @if(user.UserType != 1){
+                        <option value="@user.UserID">
+                            @user.Name (
+                            @if (user.UserType == 0)
+                            {
+                                @:Developer
+                            }
+                            else
+                            {
+                                @:QA
+                            }
+                        
+                            )
+                        </option>
+                        }
+                    }
+                </InputSelect>
+            </div>
+
+
+    
+
+
+
+
+
+            <button type="submit" class="btn btn-primary">Create</button>
+            <button type="button" class="btn btn-secondary ms-2" @onclick="GoBack">
+                Back to List
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+
+@code {
+    int hello = -1;
+    int ManagerID;
+
+
+    private ProjectUser ProjectUser { get; set; } = new();
+
+    private List<Users> Users = new();
+    private List<Projects> Projects = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetId();
+
+
+        
+
+        // Load only users with UserType = 1 (Manager)
+        
+    }
+
+    private async Task GetId()
+    {
+        hello = await LocalStorage.GetItemAsync<int>("Value");
+        ManagerID = await LocalStorage.GetItemAsync<int>("Id");
+        if (hello != 1 && hello != -1)
+        {
+            NavigationManager.NavigateTo("/sessionfail");
+        }
+        using var context = DbFactory.CreateDbContext();
+        Users = await context.Users.ToListAsync();
+        Projects = await context.Projects
+            .Where(p => p.ManagerID == ManagerID)
+            .ToListAsync();
+        StateHasChanged();
+    }
+    private async Task AddProjects()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.ProjectUsers.Add(ProjectUser);
+        await context.SaveChangesAsync();
+        if (hello == 0)
+        {
+            NavigationManager.NavigateTo("/developer");
+        }
+        else if (hello == 1)
+        {
+            NavigationManager.NavigateTo("/admin");
+        }
+        else if (hello == 2)
+        {
+            NavigationManager.NavigateTo("/qa");
+        }
+        
+    }
+    private void GoBack()
+    {
+        if (hello == 0)
+        {
+            NavigationManager.NavigateTo("/developer");
+        }
+        else if (hello == 1)
+        {
+            NavigationManager.NavigateTo("/admin");
+        }
+        else if (hello == 2)
+        {
+            NavigationManager.NavigateTo("/qa");
+        }
+
+    }
+}

@@ -1,0 +1,111 @@
+﻿@page "/admin"
+
+@inject SessionService SessionService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@if (hello == -1)
+{ 
+    <div class="text-center mt-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3">Loading Admin Panel...</p>
+    </div>
+}
+else
+{
+    <Logout />
+    
+    <div class="container mt-4">
+        <h1 class="mb-4 text-primary border-bottom pb-2">Admin Panel</h1>
+
+        <div class="btn-group mb-4">
+            @* <button class="btn btn-primary" @onclick="() => SetActiveTab(1)">Add User</button> *@
+            <button class="btn btn-outline-primary" @onclick="() => SetActiveTab(2)">Add Project</button>
+            <button class="btn btn-outline-primary" @onclick="() => SetActiveTab(3)">Add Bug</button>
+            <button class="btn btn-outline-primary" @onclick="() => SetActiveTab(4)">Assign Projects</button>
+        </div>
+
+        <div class="card p-4 shadow-sm mb-4">
+            <UserComp FilteredUsers="FilteredUsersfrom" />
+        </div>
+
+        <div class="card p-4 shadow-sm mb-4">
+            <ProjectComp FilteredProjects="FilteredProjectsfrom" />
+        </div>
+
+        <div class="card p-4 shadow-sm mb-4">
+            <BugComp Value="1" AllowedProjectIds="projectIds" />
+        </div>
+
+        <div class="card p-4 shadow-sm">
+            <ProjectUserComp Value="1" AllowedUserIds="userIds" />
+        </div>
+    </div>
+}
+
+
+
+@code {
+
+    private int activeTab = 0;
+    int hello=-1;
+    int ManagerID;
+    private List<Users> FilteredUsersfrom = new();
+    private List<Projects> FilteredProjectsfrom =new();
+    private List<int> userIds = new();
+    private List<int> projectIds = new();
+    protected override async Task OnInitializedAsync()
+    {
+        GetId();
+
+    }
+    private async Task GetId()
+    {
+        hello = await LocalStorage.GetItemAsync<int>("Value");
+        ManagerID = await LocalStorage.GetItemAsync<int>("Id");
+        if ( hello != 1  && hello != -1)
+        {
+            Navigation.NavigateTo( "/sessionfail");
+        }
+        using var context = await DbFactory.CreateDbContextAsync();
+
+
+        FilteredProjectsfrom = await context.Projects
+            .Where(p => p.ManagerID == ManagerID)
+            .ToListAsync();
+        projectIds = FilteredProjectsfrom.Select(p => p.ProjectID).ToList();
+        userIds = await context.ProjectUsers
+        .Where(pu => projectIds.Contains(pu.ProjectID))
+        .Select(pu => pu.UserID)
+        .Distinct()
+        .ToListAsync();
+        userIds.Add(ManagerID);
+        FilteredUsersfrom = await context.Users
+        .Where(u => userIds.Contains(u.UserID))
+        .ToListAsync();
+        StateHasChanged();
+    }
+    private void SetActiveTab(int tab)
+    {
+        activeTab = tab;
+        if (activeTab == 2)
+        {
+            Navigation.NavigateTo("/projects/create");
+        }
+        else if (activeTab == 3)
+        {
+            Navigation.NavigateTo("/bugs/create");
+        }
+        else if (activeTab == 4)
+        {
+            Navigation.NavigateTo("/projectusers/create");
+        }
+    }
+
+    
+}
+
+

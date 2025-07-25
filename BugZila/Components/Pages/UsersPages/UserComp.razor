@@ -1,0 +1,34 @@
+﻿
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using BugZila.Models
+@using BugZila.Data
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject SessionService SessionService
+@inject NavigationManager Navigation
+
+<PageTitle>Users</PageTitle>
+
+<h2 class="mt-4 text-primary">Users</h2>
+
+<QuickGrid TGridItem="Users" Class="table table-bordered table-striped" Items="FilteredUsers.AsQueryable()">
+    <PropertyColumn Property="users => users.Name" Title="Name" />
+    <PropertyColumn Property="users => users.Email" Title="Email" />
+    @* <PropertyColumn Property="users => users.Password" Title="Password" /> *@
+
+    <TemplateColumn Title="Type" Context="users">
+        @((BugZila.Enums.UserType)users.UserType)
+    </TemplateColumn>
+
+    <TemplateColumn Title="Actions" Context="users">
+        <a href="@($"users/edit?userid={users.UserID}")">Edit</a> |
+        <a href="@($"users/details?userid={users.UserID}")">Details</a> |
+        <a href="@($"users/delete?userid={users.UserID}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    
+    [Parameter]
+    public List<Users> FilteredUsers { get; set; } = new();
+}

@@ -1,0 +1,308 @@
+﻿@page "/bugs/create"
+@using Microsoft.Data.SqlClient
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components.Forms
+@rendermode InteractiveServer 
+@inject SessionService SessionService
+@inject NavigationManager Navigation
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+
+@if(hello == -1)
+{
+    <h1>Loading ..... </h1>
+}
+else
+{
+    <Logout />
+
+    <PageTitle>Create Bug</PageTitle>
+
+    <h1 class="mb-4 text-primary">Create New Bug</h1>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <EditForm Model="Bugs" OnValidSubmit="AddBugss">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger mb-3" />
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger">@errorMessage</div>
+                        }
+                        <div class="row">
+                            <!-- Type -->
+                            <div class="mb-3 col-md-6">
+                                <label for="type" class="form-label fw-bold">Type</label>
+                                <InputSelect id="type" class="form-select form-select-sm" @bind-Value="Bugs.Type">
+                                    @foreach (var BugType in Enum.GetValues(typeof(BugType)).Cast<BugType>())
+                                    {
+                                        <option value="@(Convert.ToInt32(BugType))">@BugType</option>
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="() => Bugs.Type" class="text-danger" />
+                            </div>
+
+                            <!-- Status -->
+                            <div class="mb-3 col-md-6">
+                                <label for="status" class="form-label fw-bold">Status</label>
+                                @if (Bugs.Type == 0)
+                                {
+                                    <InputSelect id="status" class="form-select form-select-sm" @bind-Value="Bugs.Status">
+                                        @foreach (var Feature in Enum.GetValues(typeof(Featurestatus)).Cast<Featurestatus>())
+                                        {
+                                            <option value="@(Convert.ToInt32(Feature))">@Feature</option>
+                                        }
+                                    </InputSelect>
+                                }
+                                else
+                                {
+                                    <InputSelect id="status" class="form-select form-select-sm" @bind-Value="Bugs.Status">
+                                        @foreach (var Bug in Enum.GetValues(typeof(BugStatus)).Cast<BugStatus>())
+                                        {
+                                            <option value="@(Convert.ToInt32(Bug))">@Bug</option>
+                                        }
+                                    </InputSelect>
+                                }
+                                <ValidationMessage For="() => Bugs.Status" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label fw-bold">Title</label>
+                            <InputText id="title" class="form-control form-control-sm" @bind-Value="Bugs.Title" />
+                            <ValidationMessage For="() => Bugs.Title" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label fw-bold">Description</label>
+                            <InputText id="description" class="form-control form-control-sm" @bind-Value="Bugs.Description" />
+                            <ValidationMessage For="() => Bugs.Description" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="deadline" class="form-label fw-bold">Deadline</label>
+                            <InputDate id="deadline" class="form-control form-control-sm" @bind-Value="Bugs.Deadline" />
+                            <ValidationMessage For="() => Bugs.Deadline" class="text-danger" />
+                        </div>
+
+                        <div class="row">
+                            <!-- UserID -->
+                            @if (hello != 2){
+                          
+                            <div class="mb-3 col-md-4">
+                                <label class="form-label fw-bold">Creator</label>
+                                <InputSelect class="form-select form-select-sm" @bind-Value="Bugs.CreatorID">
+                                    <option value="">-- Select Creator --</option>
+                                    @foreach (var dev in User)
+                                    {
+                                        if (dev.UserType == 2){
+                                        <option value="@dev.UserID">@dev.Name</option>
+                                        }
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="() => Bugs.CreatorID" class="text-danger" />
+                            </div>}
+                            
+                            <!-- DeveloperID -->
+                            <div class="mb-3 col-md-4">
+                                <label class="form-label fw-bold">Developer</label>
+                                <InputSelect class="form-select form-select-sm" @bind-Value="Bugs.DeveloperID">
+                                    <option value="">-- Select Developer --</option>
+                                    @foreach (var dev in User)
+                                    {
+                                        if(dev.UserType==0){
+                                        <option value="@dev.UserID">@dev.Name</option>
+                                        }
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="() => Bugs.DeveloperID" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="projectid" class="form-label fw-bold">Project</label>
+                            <InputSelect id="projectid" class="form-select form-select-sm" @bind-Value="Bugs.ProjectID">
+                                <option value="">-- Select Project --</option>
+                                @foreach (var p in Project)
+                                {
+                                    <option value="@p.ProjectID">@p.Name</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => Bugs.ProjectID" class="text-danger" />
+                        </div>
+
+                        <!-- Screenshot Upload -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Screenshot</label>
+                            <InputFile OnChange="HandleScreenshotUpload" />
+                            @if (ImagePreviewUrl != null)
+                            {
+                                <div class="mt-2">
+                                    <img src="@ImagePreviewUrl" alt="Screenshot preview" class="img-thumbnail" style="max-height: 200px;" />
+                                </div>
+                            }
+                            <ValidationMessage For="() => Bugs.Screenshot" class="text-danger" />
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="submit" class="btn btn-success px-4">Create</button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="GoBack">Back to List</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+}
+
+@code {
+    int hello = -1;
+    int ManagerID;
+    private string? errorMessage;
+    int QaID;
+
+    [SupplyParameterFromForm]
+    private Bugs Bugs { get; set; } = new Bugs
+    {
+        Deadline = DateTime.Today
+    };
+    private List<int> userIds = new();
+    private List<int> projectIds = new();
+    private List<Users> User = new();
+    private List<Projects> Project = new();
+
+    private string? ImagePreviewUrl;
+    protected override async Task OnInitializedAsync()
+    {
+        GetId();
+
+
+
+        // Load only users with UserType = 1 (Manager)
+
+    }
+    private async Task GetId()
+    {
+        hello = await LocalStorage.GetItemAsync<int>("Value");
+        ManagerID = await LocalStorage.GetItemAsync<int>("Id");
+        using var context = DbFactory.CreateDbContext();
+        if (hello != 1)
+        {
+            QaID = ManagerID;
+            var managerIds = await context.ProjectUsers
+            .Where(pu => pu.UserID == QaID)                     // Join on user
+             .Select(pu => pu.Project!)                            // Navigate to related project
+             .Where(p => p.ManagerID != null)                      // Optional: ignore null managers
+              .Select(p => p.ManagerID.Value)                       // Select only Manager IDs
+              .Distinct()                                           // Avoid duplicates
+              .ToListAsync();
+            Project = await context.Projects
+    .Where(p => p.ManagerID.HasValue && managerIds.Contains(p.ManagerID.Value))
+    .ToListAsync();
+        }
+        else
+        {
+
+            Project = await context.Projects
+                .Where(p => p.ManagerID == ManagerID)
+                .ToListAsync();
+        }
+        projectIds = Project.Select(p => p.ProjectID).ToList();
+        userIds = await context.ProjectUsers
+        .Where(pu => projectIds.Contains(pu.ProjectID))
+        .Select(pu => pu.UserID)
+        .Distinct()
+        .ToListAsync();
+        User = await context.Users
+        .Where(u => userIds.Contains(u.UserID))
+        .ToListAsync();
+        if (hello != 1 && hello != -1 && hello != 2)
+        {
+            Navigation.NavigateTo("/sessionfail");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task HandleScreenshotUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file != null)
+        {
+            // Optional: Limit file size to 2MB
+            const long maxFileSize = 2 * 1024 * 1024;
+
+            using var stream = file.OpenReadStream(maxFileSize);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            Bugs.Screenshot = memoryStream.ToArray();
+
+            // Create base64 preview
+            var base64 = Convert.ToBase64String(Bugs.Screenshot);
+            ImagePreviewUrl = $"data:{file.ContentType};base64,{base64}";
+        }
+    }
+
+    private async Task AddBugss()
+    {
+        try
+        {
+
+            using var context = DbFactory.CreateDbContext();
+            if(hello == 2)
+            {
+                Bugs.CreatorID = QaID;
+            }
+            context.Bugs.Add(Bugs);
+            await context.SaveChangesAsync();
+            if (hello == 0)
+            {
+                NavigationManager.NavigateTo("/developer");
+            }
+            else if (hello == 1)
+            {
+                NavigationManager.NavigateTo("/admin");
+            }
+            else if (hello == 2)
+            {
+                NavigationManager.NavigateTo("/qa");
+            }
+        }
+        catch (DbUpdateException ex)
+        {
+            // Check if the exception is due to unique constraint violation
+            if (ex.InnerException is SqlException sqlEx && sqlEx.Number == 2601)
+            {
+                errorMessage = "A bug with the same Title already exists for the selected Project.";
+            }
+            else
+            {
+                errorMessage = "An unexpected error occurred. Please try again.";
+            }
+        }
+    }
+    private void GoBack()
+    {
+        if (hello == 0)
+        {
+            NavigationManager.NavigateTo("/developer");
+        }
+        else if (hello == 1)
+        {
+            NavigationManager.NavigateTo("/admin");
+        }
+        else if (hello == 2)
+        {
+            NavigationManager.NavigateTo("/qa");
+        }
+
+    }
+}

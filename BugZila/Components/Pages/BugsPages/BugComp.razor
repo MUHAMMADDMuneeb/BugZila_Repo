@@ -1,0 +1,111 @@
+﻿@page "/bugs"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using BugZila.Models
+@using BugZila.Data
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+@inject SessionService SessionService
+@rendermode InteractiveServer
+
+<PageTitle>Bugs</PageTitle>
+
+<h2 class="mt-4 text-primary">Bugs</h2>
+
+<QuickGrid TGridItem="Bugs" Class="table table-bordered table-striped" Items="bugList.AsQueryable()">
+    <TemplateColumn Title="Type" Context="bug">
+        @((BugType)bug.Type)
+    </TemplateColumn>
+
+    <TemplateColumn Title="Status" Context="bug">
+        @{
+            if ((BugType)bug.Type == BugType.Feature)
+            {
+                @((Featurestatus)bug.Status)
+            }
+            else
+            {
+                @((BugStatus)bug.Status)
+            }
+        }
+    </TemplateColumn>
+
+    <PropertyColumn Property="bug => bug.Title" />
+    <PropertyColumn Property="bug => bug.Description" />
+    <TemplateColumn Title="Deadline" Context="bug">
+        @bug.Deadline.ToShortDateString()
+    </TemplateColumn>
+
+
+    <TemplateColumn Title="Creator Name" Context="bug">
+        @bug.Creator?.Name
+    </TemplateColumn>
+
+    <TemplateColumn Title="Developer Name" Context="bug">
+        @bug.Developer?.Name
+    </TemplateColumn>
+
+    <TemplateColumn Title="Project Name" Context="bug">
+        @bug.Project?.Name
+    </TemplateColumn>
+
+    @if (Value != 0)
+    {
+        <TemplateColumn Title="Actions" Context="bug">
+            <a href="@($"bugs/edit?bugid={bug.BugID}")">Edit</a> |
+            <a href="@($"bugs/details?bugid={bug.BugID}")">Details</a> |
+            <a href="@($"bugs/delete?bugid={bug.BugID}")">Delete</a>
+        </TemplateColumn>
+    }
+</QuickGrid>
+
+@code {
+    [Parameter]
+    public List<int> AllowedProjectIds { get; set; } = new();
+    [Parameter]
+    public int Value { get; set; }
+
+    private ApplicationDbContext context = default!;
+    private List<Bugs> bugList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // if (!await SessionService.IsLoggedInAsync())
+        // {
+        //     NavigationManager.NavigateTo("/sessionfail");
+        // }
+        context = DbFactory.CreateDbContext();
+        if (Value == 1)
+        {
+            bugList = await context.Bugs
+            .Include(b => b.Creator)
+            .Include(b => b.Developer)
+            .Include(b => b.Project)
+            .Where(b => AllowedProjectIds.Contains(b.ProjectID))
+            .ToListAsync();
+        }else if (Value == 0)
+        {
+            int developerId = AllowedProjectIds.First();
+
+            bugList = await context.Bugs
+               .Include(b => b.Creator)
+               .Include(b => b.Developer)
+               .Include(b => b.Project)
+               .Where(b => b.DeveloperID == developerId)
+               .ToListAsync();
+
+        }else if (Value == 2)
+        {
+            int creatorId = AllowedProjectIds.First();
+
+            bugList = await context.Bugs
+               .Include(b => b.Creator)
+               .Include(b => b.Developer)
+               .Include(b => b.Project)
+               .Where(b => b.CreatorID == creatorId)
+               .ToListAsync();
+        }
+    }
+
+    // public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

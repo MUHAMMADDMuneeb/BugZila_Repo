@@ -1,0 +1,427 @@
+﻿@*  @page "/"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Components.Pages.ProjectsPages
+@using BugZila.Models
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject SessionService SessionService
+@rendermode InteractiveServer
+
+<PageTitle>Login</PageTitle>
+
+<h3>Sign In</h3>
+<hr />
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<EditForm method="post" Model="loginModel" OnValidSubmit="HandleLogin" FormName="login" Enhance>
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email:</label>
+        <InputText id="email" class="form-control" @bind-Value="loginModel.Email" />
+        <ValidationMessage For="() => loginModel.Email" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Password:</label>
+        <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+        <ValidationMessage For="() => loginModel.Password" class="text-danger" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Sign In</button>
+</EditForm>
+
+<div class="mt-3">
+    <NavLink class="btn btn-secondary" href="users/create">
+        <i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>
+        Sign Up
+    </NavLink>
+</div>
+
+@code {
+    // [SupplyParameterFromForm]
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+
+        using var context = DbFactory.CreateDbContext();
+
+        var user = await context.Users
+            .FirstOrDefaultAsync(u => u.Email == loginModel.Email && u.Password == loginModel.Password);
+
+        if (user != null)
+        {
+            errorMessage = null;
+            SessionService.UserId = user.UserID;
+            SessionService.UserName = user.Name;
+
+
+            if (user.UserType == 0)
+            {
+                SessionService.Role = user.UserType = 0;
+                Navigation.NavigateTo("/developer");
+            }else
+            if (user.UserType == 1)
+            {
+                SessionService.Role = user.UserType = 1;
+                Navigation.NavigateTo("/admin");
+            }else 
+            if (user.UserType == 2)
+            {
+                SessionService.Role = user.UserType = 2;
+                Navigation.NavigateTo("/QA");
+            }
+            
+             
+        }
+        else
+        {
+            errorMessage = "Invalid email or password.";
+        }
+    }
+
+    public class LoginModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+} 
+*@
+@* 
+
+@page "/"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<h3>Sign In</h3>
+<hr />
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<EditForm method="post" Model="loginModel" OnValidSubmit="HandleLogin" FormName="login" Enhance>
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email:</label>
+        <InputText id="email" class="form-control" @bind-Value="loginModel.Email" />
+        <ValidationMessage For="() => loginModel.Email" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Password:</label>
+        <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+        <ValidationMessage For="() => loginModel.Password" class="text-danger" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Sign In</button>
+</EditForm>
+
+<div class="mt-3">
+    <NavLink class="btn btn-secondary" href="users/create">
+        <i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>
+        Sign Up
+    </NavLink>
+</div>
+
+<hr />
+<h5>Debug Info (Live Input)</h5>
+<p><strong>Email:</strong> @loginModel.Email</p>
+<p><strong>Password:</strong> @loginModel.Password</p>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        var email = loginModel.Email?.Trim().ToLower();
+        var password = loginModel.Password?.Trim();
+
+        var user = await context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email && u.Password == password);
+
+        if (user != null)
+        {
+            errorMessage = null;
+            Navigation.NavigateTo("/users");
+        }
+        else
+        {
+            errorMessage = "Invalid email or password.";
+        }
+    }
+
+    public class LoginModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+}
+ *@
+
+@* 
+@inject NavigationManager Navigation
+@page "/"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@using BugZila.Enums
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create</PageTitle>
+
+<h1>Sign In</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="loginModel" OnValidSubmit="HandleLogin" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email:</label>
+                <InputText id="email" @bind-Value="loginModel.Email" @bind-Value:event="oninput" class="form-control" />
+                <ValidationMessage For="() => loginModel.Email" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Password:</label>
+                <InputText id="password" @bind-Value="loginModel.Password" class="form-control" />
+                <ValidationMessage For="() => loginModel.Password" class="text-danger" />
+            </div>
+
+
+            <button type="submit" class="btn btn-primary">Sign In</button>
+        </EditForm>
+        <hr />
+        <h5>Debug Info (Live Input)</h5>
+        <p><strong>Email:</strong> @loginModel.Email</p>
+        <p><strong>Password:</strong> @loginModel.Password</p>
+
+    </div>
+</div>
+
+
+@code {
+    // [SupplyParameterFromForm]
+    private LoginModel loginModel = new();
+    public class LoginModel
+    {
+        public string Email { get; set; } = "Hello";
+        public string Password { get; set; } = "HHHH";
+    }
+    private string? errorMessage;
+    private async Task HandleLogin()
+    {
+        await Task.Delay(10000);
+        using var context = DbFactory.CreateDbContext();
+        Console.WriteLine(loginModel.Email);
+        Console.WriteLine(loginModel.Password);
+        var email = loginModel.Email?.Trim().ToLower();
+        var password = loginModel.Password?.Trim();
+
+        var user = await context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email && u.Password == password);
+
+        if (user != null)
+        {
+            errorMessage = null;
+            Navigation.NavigateTo("/users");
+        }
+        else
+        {
+            errorMessage = "Invalid email or password.";
+        }
+    }
+} *@
+@* @page "/"
+
+
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-control" @bind="email" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input class="form-control" @bind="password" />
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-danger" @onclick="Handleit">Add</button>
+</div>
+
+<div class="mt-3">
+    <p><strong>Result:</strong> @Result</p>
+</div>
+
+@code {
+    string? email;
+    string? password;
+    string? Result = "ok";
+
+    public void Handleit()
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            Result = "Email is null or empty";
+        }
+        else
+        {
+            Result = $"Email: {email}, Password: {password}";
+        }
+
+        StateHasChanged(); // ✅ Force UI to re-render
+    }
+} *@
+@* @page "/"
+ @rendermode InteractiveServer  
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+<input class="form-control" @bind-value="Email" />
+<input class="form-control" @bind-value="Password" />
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    private string currentCount = "Hello";
+    string Email = "amuneeb";
+    string Password = "Muneeb";
+    private void IncrementCount()
+    {
+        currentCount = Email+Password;
+    }
+} *@
+@page "/"
+@using Microsoft.EntityFrameworkCore
+@using BugZila.Models
+@inject IDbContextFactory<BugZila.Data.ApplicationDbContext> DbFactory
+@inject NavigationManager Navigation
+
+@inject SessionService SessionService
+@rendermode InteractiveServer
+
+<PageTitle>Login</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow p-4">
+                <h3 class="text-center mb-4">Sign In</h3>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+
+                <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email:</label>
+                        <InputText id="email" class="form-control" @bind-Value="loginModel.Email" />
+                        <ValidationMessage For="() => loginModel.Email" class="text-danger" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password:</label>
+                        <InputText id="password" type="password" class="form-control" @bind-Value="loginModel.Password" />
+                        <ValidationMessage For="() => loginModel.Password" class="text-danger" />
+                    </div>
+
+                    <div class="mb-3 text-center">
+                        <button type="submit" class="btn btn-primary px-4">Sign In</button>
+                    </div>
+                    <div class="text-center">
+                        <span>Don't have an account?</span>
+                        <NavLink href="signup" class="btn btn-link">Sign Up</NavLink>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        var email = loginModel.Email?.Trim().ToLower();
+        var password = loginModel.Password?.Trim();
+
+        var user = await context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == email );
+
+        if (user != null)
+        {
+            var hasher = new PasswordHasher<Users>();
+            var result = hasher.VerifyHashedPassword(user, user.PasswordHash, password);
+
+            if (result == PasswordVerificationResult.Success)
+            {
+                await SessionService.SetSessionAsync(user.UserID,user.UserType);
+                errorMessage = null;
+
+                // Redirect by role
+                switch (user.UserType)
+                {
+                    case 0: Navigation.NavigateTo("/developer"); break;
+                    case 1: Navigation.NavigateTo("/admin"); break;
+                    case 2: Navigation.NavigateTo("/qa"); break;
+                    default: Navigation.NavigateTo("/"); break;
+                }
+
+                return;
+            }
+            else
+            {
+                errorMessage = "Invalid email or password.";
+            }
+        }
+        
+        
+            errorMessage = "Invalid email or password.";
+       
+    }
+
+    public class LoginModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+}
