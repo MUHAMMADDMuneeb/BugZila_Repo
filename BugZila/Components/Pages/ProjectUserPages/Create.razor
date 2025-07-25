@@ -9,71 +9,63 @@
 
 <PageTitle>Create</PageTitle>
 
-<h1>Asign Project</h1>
+<h1 class="text-primary mt-4 mb-4 text-center">Assign Project</h1>
 
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+                    <EditForm method="post" Model="ProjectUser" OnValidSubmit="AddProjects" FormName="create" Enhance>
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger mb-3" role="alert" />
 
-<hr />
+                        <div class="mb-3">
+                            <label for="project" class="form-label fw-semibold">Select Project</label>
+                            <InputSelect id="project" class="form-select" @bind-Value="ProjectUser.ProjectID">
+                                <option value="0">-- Select Project --</option>
+                                @foreach (var project in Projects)
+                                {
+                                    <option value="@project.ProjectID">@project.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <EditForm method="post" Model="ProjectUser" OnValidSubmit="AddProjects" FormName="create" Enhance>
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
+                        <div class="mb-3">
+                            <label for="user" class="form-label fw-semibold">Select User</label>
+                            <InputSelect id="user" class="form-select" @bind-Value="ProjectUser.UserID">
+                                <option value="0">-- Select User --</option>
+                                @foreach (var user in Users)
+                                {
+                                    @if (user.UserType != 1)
+                                    {
+                                        <option value="@user.UserID">
+                                            @user.Name (
+                                            @if (user.UserType == 0)
+                                            {
+                                                @:Developer
+                                            }
+                                            else
+                                            {
+                                                @:QA
+                                            }
+        )
+                                        </option>
+                                    }
+                                }
+                            </InputSelect>
+                        </div>
 
-
-
-            <div class="mb-3">
-                <label for="project">Select Project</label>
-                <InputSelect id="project" class="form-control" @bind-Value="ProjectUser.ProjectID">
-                    <option value="0">-- Select Project --</option>
-                    @foreach (var project in Projects)
-                    {
-                        <option value="@project.ProjectID">@project.Name</option>
-                    }
-                </InputSelect>
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="submit" class="btn btn-success w-50 me-2">Assign</button>
+                            <button type="button" class="btn btn-outline-secondary w-50" @onclick="GoBack">Back to List</button>
+                        </div>
+                    </EditForm>
+                </div>
             </div>
-
-            <div class="mb-3">
-                <label for="user">Select User</label>
-                <InputSelect id="user" class="form-control" @bind-Value="ProjectUser.UserID">
-                    <option value="0">-- Select User --</option>
-                    
-                    @foreach (var user in Users)
-                    {
-                        @if(user.UserType != 1){
-                        <option value="@user.UserID">
-                            @user.Name (
-                            @if (user.UserType == 0)
-                            {
-                                @:Developer
-                            }
-                            else
-                            {
-                                @:QA
-                            }
-                        
-                            )
-                        </option>
-                        }
-                    }
-                </InputSelect>
-            </div>
-
-
-    
-
-
-
-
-
-            <button type="submit" class="btn btn-primary">Create</button>
-            <button type="button" class="btn btn-secondary ms-2" @onclick="GoBack">
-                Back to List
-            </button>
-        </EditForm>
+        </div>
     </div>
 </div>
-
 
 @code {
     int hello = -1;
